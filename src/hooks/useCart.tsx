@@ -1,4 +1,11 @@
-import { createContext, ReactNode, useContext, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { toast } from 'react-toastify';
 import { api } from '../services/api';
 import { Product } from '../types';
@@ -32,6 +39,20 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     return [];
   });
 
+  const prevCartRef = useRef<Product[]>(); //Crio uma referência
+
+  useEffect(() => {
+    prevCartRef.current = cart; // Toda vez que renderiza esse provider ele vai pegar o cart e colocar na referencia.
+  });
+
+  const cartPreviousValue = prevCartRef.current ?? cart; // A primeira vez o cart vai tá vazio, entao a referencia vai ta null ou undefined, usamos esse operador para pegar o valor da direita caso esteja indefinido. Da segunda vez que ja tiver um valor ele pega o valor da esquerda.
+
+  useEffect(() => {
+    if (cartPreviousValue !== cart) {
+      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cart));
+    }
+  }, [cart, cartPreviousValue]);
+
   const addProduct = async (productId: number) => {
     try {
       const cloneCart = [...cart];
@@ -64,7 +85,6 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       }
 
       setCart(cloneCart);
-      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cloneCart));
     } catch {
       return toast.error('Erro na adição do produto');
     }
@@ -80,7 +100,6 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       if (productIndex >= 0) {
         cloneCart.splice(productIndex, 1); // Começo a apagar no index do produto e apago somente 1, ou seja ele.
         setCart(cloneCart);
-        localStorage.setItem('@RocketShoes:cart', JSON.stringify(cloneCart));
       } else {
         throw Error(); // força o erro
       }
@@ -111,7 +130,6 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       if (productExists) {
         productExists.amount = amount;
         setCart(cloneCart);
-        localStorage.setItem('@RocketShoes:cart', JSON.stringify(cloneCart));
       } else {
         throw Error();
       }
